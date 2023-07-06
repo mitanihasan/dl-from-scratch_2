@@ -1,3 +1,4 @@
+from common.config import GPU
 from common.functions import softmax, cross_entropy_error, sigmoid
 import numpy as np
 
@@ -78,7 +79,7 @@ class SoftmaxWithLoss:
         batch_size = self.y.shape[0]
 
         dx = self.y.copy()
-        dx[np.arange(batch_size), self.t] -= 1  # ????
+        dx[np.arange(batch_size), self.t] -= 1
         dx *= dout
         dx = dx / batch_size
 
@@ -118,3 +119,42 @@ class SigmoidWithLoss:
         dx = (self.y - self.t) * dout / batch_size
 
         return dx
+
+
+class Dropout:
+    def __init__(self, dropout_ratio=0.5):
+        self.params, self.grads = [], []
+        self.dropout_ratio = dropout_ratio
+        self.mask = None
+
+    def forward(self, x, train_flag=True):
+        if train_flag:
+            self.mask = np.random.rand(*x.shape) > self.dropout_ratio
+            return x * self.mask
+        else:
+            return x * (1 - self.dropout_ratio)
+
+    def backward(self, dout):
+        return dout * self.mask
+
+
+class Embedding:
+    def __init__(self, W):
+        self.params = [W]
+        self.grads = [np.zeros_like(W)]
+        self.idx = None
+
+    def forward(self, idx):
+        W, = self.params
+        self.idx = idx
+        out = W[idx]
+        return out
+
+    def backward(self, dout):
+        dW, = self.grads
+        dW[...] = 0
+        if GPU:
+            np.scatter_add(dW, self.idx, dout)
+        else:
+            np.add.at(dW, self.id, dout)
+        return None

@@ -1,6 +1,6 @@
 from common.config import GPU
 from common.functions import softmax, cross_entropy_error, sigmoid
-import numpy as np
+from common.np import np
 
 
 class MatMul:
